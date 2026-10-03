@@ -1,15 +1,14 @@
 # Corroborate
 
-Mobile-first PWA for anonymous women's safety reporting at UC Berkeley. Survivors file reports through a guided chat; reports that look like the same offender get matched so people can corroborate each other.
+Mobile-first PWA for anonymous women's safety reporting at UC Berkeley. Survivors file reports through a short step-by-step form; reports that look like the same offender get matched so people can corroborate each other.
 
 ## Stack
 
 - Next.js 14 (App Router), TypeScript 5, Tailwind CSS 3, shadcn/ui (`components/ui/`, new-york style)
 - react-leaflet 4 + leaflet for the map (client-only; load via `next/dynamic` with `ssr: false`)
 - Supabase (`@supabase/supabase-js`) for storage
-- Google Gemini (`@google/genai`, free tier) for the optional intake chat only — see "AI usage" below
 - `@react-pdf/renderer` for case-file PDFs
-- Copy `.env.example` to `.env.local` and fill in `GEMINI_API_KEY` (free from https://aistudio.google.com), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- Copy `.env.example` to `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
 Layout targets iPhone width (390px) first; the shell is capped at `max-w-phone` (430px). Palette is calm purple/neutral, defined as CSS variables in `app/globals.css`.
 
@@ -27,18 +26,18 @@ Demo users are Maya and Priya. The header switcher stores the current one in loc
 | `POST /api/match` | `{ reportId }` | `MatchResponse` |
 | `GET /api/case/[groupId]` | – | `CaseResponse` |
 
-## AI usage
+## No AI
 
-The demo must never depend on an outside service.
+The app uses no AI or other outside API, so the demo can't fail because of a key, rate limit or outage.
 
-- **Matching is rule-based** (`lib/match.ts`), never AI. Two reports match on the same `offender_handle`, or on the same category + within ~500 m + within ~30 days + 2 or more shared words in `offender_desc`. Confidence is the share of rules that matched.
-- **Intake uses Gemini only as an optional chat.** If `GEMINI_API_KEY` is missing, the call errors, or it takes more than a few seconds, the Report tab falls back to a step-by-step form (what happened, where, when, offender description or handle, severity). Both paths produce the same `ReportDraft`.
-- The Gemini free tier may use prompts to improve Google's products. Only send demo data, and don't claim real reports stay private while on the free tier.
+- **Matching is rule-based** (`lib/match.ts`). Two reports match on the same `offender_handle`, or on the same category + within ~500 m + within ~30 days + 2 or more shared words in `offender_desc`. Confidence is the share of rules that matched.
+- **Intake is a step-by-step form** in the Report tab: what happened, where (tap the map), when, offender description or handle, severity. It builds a `ReportDraft` and POSTs it to `/api/reports`. `POST /api/intake` stays as a scripted stub but nothing needs to use it.
+- Pitch point: reports never leave our own database, and no third party sees what a survivor wrote.
 
 ## File ownership
 
 - **Person A (frontend):** `app/report/`, `app/map/`, `app/vault/`, `components/`, PWA files (`public/manifest.json`, `public/icons/`, PWA metadata in `app/layout.tsx`)
-- **Person B (backend):** `app/api/`, `lib/gemini.ts`, `lib/supabase.ts`, `lib/match.ts`, `scripts/`, `app/case/`
+- **Person B (backend):** `app/api/`, `lib/supabase.ts`, `lib/match.ts`, `scripts/`, `app/case/`
 - Shared, edit only when asked: `lib/types.ts`, `lib/mock.ts`, `CLAUDE.md`, config files
 
 ## Rules
