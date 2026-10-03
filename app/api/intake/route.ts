@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { IntakeRequest, IntakeResponse } from "@/lib/types";
 
-// STUB — replace with Claude-backed intake (lib/claude.ts).
+// STUB — replace with Gemini-backed intake (lib/gemini.ts), falling back to the form flow on failure.
 export async function POST(req: Request) {
   const { messages } = (await req.json()) as IntakeRequest;
   const turns = messages.filter((m) => m.role === "user").length;

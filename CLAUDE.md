@@ -7,9 +7,9 @@ Mobile-first PWA for anonymous women's safety reporting at UC Berkeley. Survivor
 - Next.js 14 (App Router), TypeScript 5, Tailwind CSS 3, shadcn/ui (`components/ui/`, new-york style)
 - react-leaflet 4 + leaflet for the map (client-only; load via `next/dynamic` with `ssr: false`)
 - Supabase (`@supabase/supabase-js`) for storage
-- Anthropic SDK (`@anthropic-ai/sdk`) for intake chat and matching
+- Google Gemini (`@google/genai`, free tier) for the optional intake chat only — see "AI usage" below
 - `@react-pdf/renderer` for case-file PDFs
-- Copy `.env.example` to `.env.local` and fill in `ANTHROPIC_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- Copy `.env.example` to `.env.local` and fill in `GEMINI_API_KEY` (free from https://aistudio.google.com), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
 Layout targets iPhone width (390px) first; the shell is capped at `max-w-phone` (430px). Palette is calm purple/neutral, defined as CSS variables in `app/globals.css`.
 
@@ -27,10 +27,18 @@ Demo users are Maya and Priya. The header switcher stores the current one in loc
 | `POST /api/match` | `{ reportId }` | `MatchResponse` |
 | `GET /api/case/[groupId]` | – | `CaseResponse` |
 
+## AI usage
+
+The demo must never depend on an outside service.
+
+- **Matching is rule-based** (`lib/match.ts`), never AI. Two reports match on the same `offender_handle`, or on the same category + within ~500 m + within ~30 days + 2 or more shared words in `offender_desc`. Confidence is the share of rules that matched.
+- **Intake uses Gemini only as an optional chat.** If `GEMINI_API_KEY` is missing, the call errors, or it takes more than a few seconds, the Report tab falls back to a step-by-step form (what happened, where, when, offender description or handle, severity). Both paths produce the same `ReportDraft`.
+- The Gemini free tier may use prompts to improve Google's products. Only send demo data, and don't claim real reports stay private while on the free tier.
+
 ## File ownership
 
 - **Person A (frontend):** `app/report/`, `app/map/`, `app/vault/`, `components/`, PWA files (`public/manifest.json`, `public/icons/`, PWA metadata in `app/layout.tsx`)
-- **Person B (backend):** `app/api/`, `lib/claude.ts`, `lib/supabase.ts`, `lib/match.ts`, `scripts/`, `app/case/`
+- **Person B (backend):** `app/api/`, `lib/gemini.ts`, `lib/supabase.ts`, `lib/match.ts`, `scripts/`, `app/case/`
 - Shared, edit only when asked: `lib/types.ts`, `lib/mock.ts`, `CLAUDE.md`, config files
 
 ## Rules
@@ -41,4 +49,4 @@ Demo users are Maya and Priya. The header switcher stores the current one in loc
 
 ## Gotcha
 
-Webpack refuses to build from a path containing `!`. Keep the project in a folder without `!` in its path (e.g. `~/corroborate`), or `npm run dev` and `npm run build` will fail with a "contains exclamation mark" error.
+Webpack refuses to build from a path containing `!`. Keep the project in a folder without `!` in its path, or `npm run dev` and `npm run build` fail with a "contains exclamation mark" error.
