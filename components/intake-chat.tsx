@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUp, Check, Loader2, LocateFixed, Lock, Maximize2, RotateCcw, X } from "lucide-react";
+import { ArrowUp, Check, Loader2, LocateFixed, Lock, Maximize2, RotateCcw, Sparkles, X } from "lucide-react";
 import type { Category, MatchResponse, Report, ReportDraft, Severity } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,7 @@ const LocationPicker = dynamic(() => import("./location-picker"), {
 
 type Step = "category" | "summary" | "where" | "when" | "who" | "severity" | "review";
 type Bubble = { id: number; from: "bot" | "user"; text: string };
-type Outcome = { kind: "matched"; groupId: string } | { kind: "saved" } | { kind: "error"; message: string };
+type Outcome = { kind: "matched"; groupId: string; demo: boolean } | { kind: "saved" } | { kind: "error"; message: string };
 
 const QUESTIONS: Record<Step, (d: ReportDraft) => string> = {
   category: () =>
@@ -64,6 +64,7 @@ export function IntakeChat() {
   const [typing, setTyping] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [demo, setDemo] = useDemoMode();
   const nextId = useRef(1);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -107,19 +108,29 @@ export function IntakeChat() {
       const report = (await res.json()) as Report;
 
       // A failed match check still leaves the report saved, so treat it as "no match yet".
-      let match: MatchResponse | null = null;
-      try {
-        const m = await fetch("/api/match", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reportId: report.id }),
-        });
-        if (m.ok) match = (await m.json()) as MatchResponse;
-      } catch {}
+      const tryMatch = async (url: string): Promise<MatchResponse | null> => {
+        try {
+          const m = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reportId: report.id }),
+          });
+          return m.ok ? ((await m.json()) as MatchResponse) : null;
+        } catch {
+          return null;
+        }
+      };
+      // Real matches always win; demo mode only fills in when nobody else has reported.
+      let match = await tryMatch("/api/match");
+      let isDemo = false;
+      if (!match?.matched && demo) {
+        match = await tryMatch("/api/demo/match");
+        isDemo = !!match?.matched;
+      }
 
       setOutcome(
         match?.matched && match.match_group_id
-          ? { kind: "matched", groupId: match.match_group_id }
+          ? { kind: "matched", groupId: match.match_group_id, demo: isDemo }
           : { kind: "saved" },
       );
     } catch (e) {
@@ -134,6 +145,7 @@ export function IntakeChat() {
   return (
     <>
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto overscroll-contain px-4 py-4">
+        <DemoToggle on={demo} onChange={setDemo} />
         {bubbles.map((b) => (
           <ChatBubble key={b.id} from={b.from}>
             {b.text}
@@ -159,6 +171,49 @@ export function IntakeChat() {
 
       {outcome && <OutcomeScreen outcome={outcome} onClose={restart} onRetry={() => setOutcome(null)} />}
     </>
+  );
+}
+
+const DEMO_KEY = "beacon:demo";
+
+// On by default so a single visitor can see a match; remembered per device.
+function useDemoMode(): [boolean, (on: boolean) => void] {
+  const [on, setOn] = useState(true);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(DEMO_KEY) === "off") setOn(false);
+    } catch {}
+  }, []);
+  const set = (v: boolean) => {
+    setOn(v);
+    try {
+      localStorage.setItem(DEMO_KEY, v ? "on" : "off");
+    } catch {}
+  };
+  return [on, set];
+}
+
+function DemoToggle({ on, onChange }: { on: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!on)}
+      aria-pressed={on}
+      className={cn(
+        "flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left text-xs ring-1 transition",
+        on ? "bg-secondary/70 text-secondary-foreground ring-primary/30" : "bg-muted/50 text-muted-foreground ring-border",
+      )}
+    >
+      <Sparkles className="h-4 w-4 shrink-0 text-primary" />
+      <span className="flex-1">
+        <span className="font-semibold">Demo match {on ? "on" : "off"}.</span>{" "}
+        {on
+          ? "If nobody else has reported this person yet, we'll show a sample match so you can see what happens."
+          : "Only real reports from other people can match yours."}
+      </span>
+      <span className={cn("relative h-5 w-9 shrink-0 rounded-full transition", on ? "bg-primary" : "bg-muted-foreground/30")}>
+        <span className={cn("absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all", on ? "left-[18px]" : "left-0.5")} />
+      </span>
+    </button>
   );
 }
 
@@ -643,6 +698,11 @@ function OutcomeScreen({
           <p className="mt-2 text-sm text-white/60 animate-in fade-in delay-700 duration-700 fill-mode-both">
             Neither of you has been identified to the other. You decide what happens next.
           </p>
+          {outcome.demo && (
+            <p className="mx-auto mt-5 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs text-white/80 ring-1 ring-white/20 animate-in fade-in delay-700 duration-700 fill-mode-both">
+              <Sparkles className="h-3.5 w-3.5" /> Demo: the other report is a sample
+            </p>
+          )}
           <div className="mt-10 space-y-3 animate-in fade-in slide-in-from-bottom-4 delay-1000 duration-700 fill-mode-both">
             <Link
               href={`/case/${outcome.groupId}`}

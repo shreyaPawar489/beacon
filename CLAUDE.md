@@ -33,6 +33,10 @@ Users are anonymous. Each device generates a random private ID on first visit (l
 - **Matching is rule-based** (`lib/match.ts`), no AI. Two reports match on the same `offender_handle`, or on the same category + within ~500 m + within ~30 days + 2 or more shared words in `offender_desc` (unless both name different handles). A handle match always wins over a rule match. Confidence is the share of rules that matched.
 - Stored reports never leave our own database, but what a survivor types during intake is sent to the Anthropic API.
 
+## Demo match mode
+
+On by default (toggle at the top of the Report chat, stored in localStorage `beacon:demo`). After a real `/api/match` finds nothing, the client calls `POST /api/demo/match`, which creates a sample report from a `demo_*` reporter mirroring the visitor's (same handle or description, ~9 days earlier), groups them as `mg_demo_*`, and pre-consents the sample reporter. Demo cases are labelled on the match screen, case page and vault. Sample reports never match anyone; a real match moves a report out of its demo case. Seeded reporters from `lib/mock.ts` count as already consented. Helpers in `lib/demo.ts`.
+
 ## Database
 
 - `supabase/schema.sql` creates `reports` (mirrors `Report`; `id` is text). RLS is on with no policies, so only the service role key (server-side, `lib/supabase.ts`) can read or write.

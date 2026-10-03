@@ -70,9 +70,14 @@ function loadConsent(): ConsentMap {
   return existsSync(CONSENT_FILE) ? (JSON.parse(readFileSync(CONSENT_FILE, "utf8")) as ConsentMap) : {};
 }
 
+// Seeded sample reporters (lib/mock.ts) can't respond, so they count as ready;
+// otherwise a visitor who matches a seeded case could never reach the last step.
+const SEEDED_ALIASES = new Set(MOCK_REPORTS.map((r) => r.user_alias));
+
 export function consentStatus(groupId: string, user: string | null) {
   const people = new Set(reportsInGroup(groupId).map((r) => r.user_alias));
-  const ready = (loadConsent()[groupId] ?? []).filter((u) => people.has(u));
+  const consented = new Set(loadConsent()[groupId] ?? []);
+  const ready = Array.from(people).filter((u) => consented.has(u) || (SEEDED_ALIASES.has(u) && u !== user));
   return { ready: ready.length, total: people.size, mine: !!user && ready.includes(user) };
 }
 

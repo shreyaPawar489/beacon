@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Check, Copy, ExternalLink, Loader2, Phone, ShieldCheck, Users } from "lucide-react";
 import type { CaseResponse, Report } from "@/lib/types";
 import { useUser } from "@/components/user-provider";
+import { isDemoGroup } from "@/lib/demo";
 import { categoryEmoji, categoryLabel, formatWhen, severityMeta } from "@/components/report-meta";
 
 const PATHWAY = [
@@ -100,6 +101,13 @@ export default function CasePage({ params }: { params: { groupId: string } }) {
           {formatWhen(reports[0].datetime)} to {formatWhen(reports[reports.length - 1].datetime)}
         </p>
       </section>
+
+      {isDemoGroup(params.groupId) && (
+        <p className="rounded-2xl bg-secondary/70 px-4 py-3 text-xs text-secondary-foreground ring-1 ring-primary/20">
+          ✨ <span className="font-semibold">Demo case.</span> The other report is a sample created so you can see how
+          matching and the Title IX step work. Nothing here is sent anywhere.
+        </p>
+      )}
 
       <NextStep groupId={params.groupId} user={user!} reports={reports} handles={handles} fingerprint={fingerprint} onStep={setActiveStep} />
 

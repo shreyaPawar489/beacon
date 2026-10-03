@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { MatchRequest, MatchResponse } from "@/lib/types";
 import { findMatch, scorePair } from "@/lib/match";
+import { isDemoGroup, isDemoReport } from "@/lib/demo";
 import { getReport, listReports, setGroup } from "@/lib/store";
 
 export async function POST(req: Request) {
@@ -10,8 +11,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Report ${reportId} not found` }, { status: 404 });
   }
 
-  // Only other people's reports can corroborate yours.
-  const candidates = listReports().filter((r) => r.user_alias !== report.user_alias);
+  // Only other real people's reports can corroborate yours. Demo samples never
+  // match; a real report sitting in a demo case is treated as unmatched so a
+  // real match moves it into a real case.
+  const candidates = listReports()
+    .filter((r) => r.user_alias !== report.user_alias && !isDemoReport(r))
+    .map((r) => (isDemoGroup(r.match_group_id) ? { ...r, match_group_id: undefined } : r));
   const res: MatchResponse = findMatch(report, candidates);
 
   if (res.matched && res.match_group_id) {

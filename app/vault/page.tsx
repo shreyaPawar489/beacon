@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ChevronRight, Lock, MessageSquarePlus } from "lucide-react";
 import type { Report } from "@/lib/types";
 import { useUser } from "@/components/user-provider";
+import { isDemoGroup } from "@/lib/demo";
 import { categoryEmoji, categoryLabel, formatWhen, severityMeta } from "@/components/report-meta";
 
 export default function VaultPage() {
@@ -81,7 +82,7 @@ export default function VaultPage() {
                     href={`/case/${r.match_group_id}`}
                     className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground"
                   >
-                    🔗 Matched <ChevronRight className="h-3 w-3" />
+                    🔗 {isDemoGroup(r.match_group_id) ? "Demo match" : "Matched"} <ChevronRight className="h-3 w-3" />
                   </Link>
                 ) : (
                   <span className="shrink-0 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground">
