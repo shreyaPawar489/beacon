@@ -38,6 +38,7 @@ export default function CasePage({ params }: { params: { groupId: string } }) {
   const [fingerprint, setFingerprint] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user) return;
     setReports(null);
     fetch(`/api/case/${encodeURIComponent(params.groupId)}?user=${encodeURIComponent(user)}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
@@ -75,7 +76,14 @@ export default function CasePage({ params }: { params: { groupId: string } }) {
     if (r.user_alias === user) names.set(r.user_alias, "You");
     else if (!names.has(r.user_alias)) names.set(r.user_alias, `Reporter ${String.fromCharCode(66 + next++)}`);
   }
-  const handles = Array.from(new Set(reports.map((r) => r.offender_handle).filter(Boolean)));
+  // One entry per account, however each person typed it (@Foo vs foo).
+  const handles = Array.from(
+    new Map(
+      reports
+        .filter((r) => r.offender_handle)
+        .map((r) => [r.offender_handle!.trim().toLowerCase().replace(/^@+/, ""), r.offender_handle!.trim()]),
+    ).values(),
+  ).map((h) => (h.startsWith("@") ? h : `@${h}`));
 
   return (
     <div className="space-y-6 pb-4 animate-in fade-in duration-300">
@@ -107,7 +115,8 @@ export default function CasePage({ params }: { params: { groupId: string } }) {
                     <span className="text-muted-foreground">{formatWhen(r.datetime)}</span>
                   </div>
                   <p className="mt-2 text-sm font-medium">
-                    {categoryEmoji(r.category)} {categoryLabel(r.category)} · {r.location.label}
+                    {categoryEmoji(r.category)} {categoryLabel(r.category)}
+                    {r.location.label && r.location.label !== "Online" && ` · ${r.location.label}`}
                   </p>
                   {r.offender_desc && <p className="mt-1 text-sm text-muted-foreground">{r.offender_desc}</p>}
                   <p className="mt-2 text-sm">

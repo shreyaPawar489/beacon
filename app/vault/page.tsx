@@ -13,6 +13,7 @@ export default function VaultPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user) return;
     let cancelled = false;
     setReports(null);
     setError(null);

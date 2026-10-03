@@ -95,6 +95,7 @@ export function IntakeChat() {
   }
 
   async function submit() {
+    if (!user) return;
     setSubmitting(true);
     try {
       const res = await fetch("/api/reports", {

@@ -4,7 +4,7 @@ import { reportsInGroup } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/case/[groupId]?user=maya
+// GET /api/case/[groupId]?user=<device id>
 // Other reporters' aliases are pseudonymised and their summaries withheld, so
 // one survivor never receives another's words or identity.
 export async function GET(req: Request, { params }: { params: { groupId: string } }) {

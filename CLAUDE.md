@@ -13,17 +13,17 @@ Mobile-first PWA for anonymous women's safety reporting at UC Berkeley. Survivor
 
 Layout targets iPhone width (390px) first; the shell is capped at `max-w-phone` (430px). Palette is calm purple/neutral, defined as CSS variables in `app/globals.css`.
 
-Demo users are Maya and Priya. The header switcher stores the current one in localStorage (`corroborate:user`); read it with `useUser()` from `components/user-provider.tsx`.
+Users are anonymous. Each device generates a random private ID on first visit (localStorage `corroborate:device`) and is shown a pseudonym derived from it ("Quiet Fern"). Read it with `useUser()` from `components/user-provider.tsx`; `user` is null until loaded. The header lets someone "Start fresh" on a shared device. `?user=<id>` overrides the identity for one tab (sessionStorage).
 
 ## Shared contract
 
-`lib/types.ts` defines every shared type and API shape. `lib/mock.ts` has 30 mock reports, including two matched pairs (`mg_doe_hoodie`, `mg_calbro`). All API routes read and write `lib/store.ts`, a JSON file at `data/reports.json` (gitignored, seeded from `lib/mock.ts` on first use; `npm run demo:reset` wipes it). Supabase code is kept for later but unused. Use `?user=maya` / `?user=priya` to run two users in two windows (stored per tab in sessionStorage). The Map tab is hidden.
+`lib/types.ts` defines every shared type and API shape. `lib/mock.ts` has 30 mock reports, including two matched pairs (`mg_doe_hoodie`, `mg_calbro`). All API routes read and write `lib/store.ts`, a JSON file at `data/reports.json` (gitignored, seeded from `lib/mock.ts` on first use; `npm run demo:reset` wipes it). Supabase code is kept for later but unused. The Map tab is hidden.
 
 | Route | Request | Response |
 |---|---|---|
 | `POST /api/intake` | `IntakeRequest` | `IntakeResponse` |
 | `POST /api/reports` | `ReportDraft` | `Report` |
-| `GET /api/reports[?user=maya]` | – | `Report[]` |
+| `GET /api/reports?user=<id>` | – | `Report[]` (that user's only; `user` required) |
 | `POST /api/match` | `{ reportId }` | `MatchResponse` |
 | `GET /api/case/[groupId]` | – | `CaseResponse` |
 
@@ -43,6 +43,10 @@ Demo users are Maya and Priya. The header switcher stores the current one in loc
 1. One developer owns the whole repo; there are no file ownership boundaries.
 2. Never change `lib/types.ts` request/response shapes unless explicitly asked to.
 3. Commit small and often. Always run `git pull --rebase` before every push.
+
+## Testing with visitors
+
+`npm run booth` serves on the LAN; phones on the same Wi-Fi open `http://<laptop-ip>:3000`. Over plain http, GPS ("use my location") and the case fingerprint are unavailable; everything else works.
 
 ## Gotcha
 

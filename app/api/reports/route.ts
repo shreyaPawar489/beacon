@@ -6,8 +6,10 @@ export const dynamic = "force-dynamic";
 
 const CATEGORIES: Category[] = ["harassment", "stalking", "assault", "unsafe_area", "online"];
 
+// Only ever returns one person's own reports; there is no "list everyone" view.
 export async function GET(req: Request) {
   const user = new URL(req.url).searchParams.get("user");
+  if (!user) return NextResponse.json({ error: "user is required" }, { status: 400 });
   return NextResponse.json(listReports(user));
 }
 
