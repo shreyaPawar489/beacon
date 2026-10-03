@@ -7,7 +7,10 @@ import path from "node:path";
 import { MOCK_REPORTS } from "./mock";
 import type { Report, ReportDraft } from "./types";
 
-const FILE = path.join(process.cwd(), "data", "reports.json");
+// On Vercel the deployment is read-only except /tmp (ephemeral, per instance),
+// which is fine for a public demo.
+const DATA_DIR = process.env.VERCEL ? "/tmp/beacon" : path.join(process.cwd(), "data");
+const FILE = path.join(DATA_DIR, "reports.json");
 
 function load(): Report[] {
   if (!existsSync(FILE)) save(MOCK_REPORTS);
@@ -63,7 +66,7 @@ export function setGroup(ids: string[], groupId: string) {
 
 // Title IX consent: which reporters in a case are ready to go to OPHD together.
 // Kept apart from reports so the Report shape stays unchanged.
-const CONSENT_FILE = path.join(process.cwd(), "data", "consent.json");
+const CONSENT_FILE = path.join(DATA_DIR, "consent.json");
 type ConsentMap = Record<string, string[]>; // groupId -> user aliases who consented
 
 function loadConsent(): ConsentMap {
