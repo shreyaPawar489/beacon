@@ -7,9 +7,9 @@ import { useEffect } from "react";
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { BERKELEY } from "./report-meta";
 
-export const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+export const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 export const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>';
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 export const pinIcon = (className = "") =>
   L.divIcon({
@@ -21,6 +21,16 @@ export const pinIcon = (className = "") =>
 
 function TapToPick({ onPick }: { onPick: (lat: number, lng: number) => void }) {
   useMapEvents({ click: (e) => onPick(e.latlng.lat, e.latlng.lng) });
+  return null;
+}
+
+// Leaflet measures its container once; re-measure after sheet/expand animations.
+function FixSize() {
+  const map = useMap();
+  useEffect(() => {
+    const t = setTimeout(() => map.invalidateSize(), 350);
+    return () => clearTimeout(t);
+  }, [map]);
   return null;
 }
 
@@ -42,11 +52,12 @@ export default function LocationPicker({
   return (
     <MapContainer
       center={value ? [value.lat, value.lng] : BERKELEY}
-      zoom={16}
+      zoom={15}
       zoomControl={false}
       className="h-full w-full"
     >
-      <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
+      <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} maxZoom={19} />
+      <FixSize />
       <TapToPick onPick={onPick} />
       <FlyTo point={value} />
       {value && <Marker position={[value.lat, value.lng]} icon={pinIcon()} />}

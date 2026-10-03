@@ -74,3 +74,7 @@
 .leaflet-control-attribution {
   font-size: 9px;
 }
+/* Soften OSM's colours to sit with the calm palette */
+.leaflet-tile-pane {
+  filter: saturate(0.55) brightness(1.04);
+}

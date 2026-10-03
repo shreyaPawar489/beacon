@@ -1,11 +1,12 @@
 "use client";
 
-// Chat-style report intake. Scripted questions, no AI: each answer fills the
-// ReportDraft directly (see CLAUDE.md "No AI").
+// Chat-style report intake. Scripted questions: each answer fills the
+// ReportDraft directly, so it works without an API key.
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Check, Loader2, LocateFixed, Lock, MapPin, RotateCcw, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ArrowUp, Check, Loader2, LocateFixed, Lock, Maximize2, RotateCcw, X } from "lucide-react";
 import type { Category, MatchResponse, Report, ReportDraft, Severity } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -304,7 +305,6 @@ function Composer({
   const [text, setText] = useState("");
   const [handle, setHandle] = useState("");
   const [custom, setCustom] = useState("");
-  const [picking, setPicking] = useState(false);
 
   switch (step) {
     case "category":
@@ -334,56 +334,7 @@ function Composer({
       );
 
     case "where":
-      return (
-        <>
-          <div className="flex flex-wrap gap-2">
-            {PLACES.map((p) => (
-              <Chip key={p.label} onClick={() => onAnswer(`📍 ${p.label}`, { location: p })}>
-                {p.label}
-              </Chip>
-            ))}
-            <Chip onClick={() => setPicking(true)}>
-              <MapPin className="mr-1 inline h-4 w-4 text-primary" /> Drop a pin
-            </Chip>
-            <Chip
-              onClick={() =>
-                navigator.geolocation?.getCurrentPosition(
-                  ({ coords }) => {
-                    const label = labelFor(coords.latitude, coords.longitude);
-                    onAnswer(`📍 Here (${label})`, {
-                      location: { lat: coords.latitude, lng: coords.longitude, label },
-                    });
-                  },
-                  () => setPicking(true),
-                  { enableHighAccuracy: true, timeout: 8000 },
-                )
-              }
-            >
-              <LocateFixed className="mr-1 inline h-4 w-4 text-primary" /> I&apos;m there now
-            </Chip>
-            {draft.category === "online" && (
-              <Chip
-                onClick={() =>
-                  onAnswer("It was only online", {
-                    location: { lat: BERKELEY[0], lng: BERKELEY[1], label: "Online" },
-                  })
-                }
-              >
-                Only online
-              </Chip>
-            )}
-          </div>
-          {picking && (
-            <PinSheet
-              onCancel={() => setPicking(false)}
-              onConfirm={(loc) => {
-                setPicking(false);
-                onAnswer(`📍 ${loc.label}`, { location: loc });
-              }}
-            />
-          )}
-        </>
-      );
+      return <WhereStep online={draft.category === "online"} onAnswer={onAnswer} />;
 
     case "when": {
       const ago = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
@@ -494,18 +445,130 @@ function Composer({
   }
 }
 
+type Point = { lat: number; lng: number };
+
+// Live map inline in the chat: tap to drop a pin, or use a quick pick / GPS.
+function WhereStep({
+  online,
+  onAnswer,
+}: {
+  online: boolean;
+  onAnswer: (text: string, patch: ReportDraft) => void;
+}) {
+  const [point, setPoint] = useState<Point | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [geoError, setGeoError] = useState(false);
+  const label = point ? labelFor(point.lat, point.lng) : null;
+
+  const confirm = (p: Point) => {
+    const l = labelFor(p.lat, p.lng);
+    onAnswer(`📍 ${l}`, { location: { ...p, label: l } });
+  };
+
+  const locate = () => {
+    if (!navigator.geolocation) return setGeoError(true);
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setLocating(false);
+        setGeoError(false);
+        setPoint({ lat: coords.latitude, lng: coords.longitude });
+      },
+      () => {
+        setLocating(false);
+        setGeoError(true);
+      },
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="relative isolate h-44 overflow-hidden rounded-2xl ring-1 ring-border">
+        <LocationPicker value={point} onPick={(lat, lng) => setPoint({ lat, lng })} />
+        {!point && (
+          <span className="pointer-events-none absolute left-1/2 top-2 z-[1000] -translate-x-1/2 rounded-full bg-foreground/80 px-3 py-1 text-xs text-background">
+            Tap the map to drop a pin
+          </span>
+        )}
+        <div className="absolute right-2 top-2 z-[1000] flex flex-col gap-1.5">
+          <MapButton label="Use my location" onClick={locate}>
+            {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+          </MapButton>
+          <MapButton label="Expand map" onClick={() => setExpanded(true)}>
+            <Maximize2 className="h-4 w-4" />
+          </MapButton>
+        </div>
+      </div>
+
+      {point ? (
+        <Button className="h-11 w-full rounded-xl" onClick={() => confirm(point)}>
+          <Check /> Use {label}
+        </Button>
+      ) : (
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+          {online && (
+            <Chip
+              className="shrink-0"
+              onClick={() =>
+                onAnswer("It was only online", { location: { lat: BERKELEY[0], lng: BERKELEY[1], label: "Online" } })
+              }
+            >
+              Only online
+            </Chip>
+          )}
+          {PLACES.map((p) => (
+            <Chip key={p.label} className="shrink-0 whitespace-nowrap" onClick={() => setPoint({ lat: p.lat, lng: p.lng })}>
+              {p.label}
+            </Chip>
+          ))}
+        </div>
+      )}
+      {geoError && <p className="text-xs text-muted-foreground">Couldn&apos;t get your location. Tap the map instead.</p>}
+
+      {expanded && (
+        <PinSheet
+          initial={point}
+          onCancel={() => setExpanded(false)}
+          onConfirm={(p) => {
+            setExpanded(false);
+            setPoint(p);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function MapButton({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      aria-label={label}
+      onClick={onClick}
+      className="flex h-9 w-9 items-center justify-center rounded-full bg-card text-primary shadow-md ring-1 ring-border active:scale-95"
+    >
+      {children}
+    </button>
+  );
+}
+
+// Full-screen map. Portalled to <body> because the composer's backdrop-blur
+// would otherwise trap `position: fixed` inside it.
 function PinSheet({
+  initial,
   onCancel,
   onConfirm,
 }: {
+  initial: Point | null;
   onCancel: () => void;
-  onConfirm: (loc: { lat: number; lng: number; label: string }) => void;
+  onConfirm: (p: Point) => void;
 }) {
-  const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [point, setPoint] = useState<Point | null>(initial);
   const label = point ? labelFor(point.lat, point.lng) : null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background animate-in fade-in slide-in-from-bottom-8 duration-300">
+  return createPortal(
+    <div className="isolate fixed inset-0 z-50 flex flex-col bg-background animate-in fade-in slide-in-from-bottom-8 duration-300">
       <div className="pt-safe mx-auto flex w-full max-w-phone items-center justify-between border-b px-4 py-3">
         <button onClick={onCancel} className="flex items-center gap-1 text-sm text-muted-foreground">
           <X className="h-4 w-4" /> Cancel
@@ -528,12 +591,13 @@ function PinSheet({
         <Button
           className="mb-3 h-12 w-full rounded-xl text-base"
           disabled={!point}
-          onClick={() => point && label && onConfirm({ ...point, label })}
+          onClick={() => point && onConfirm(point)}
         >
           <Check /> Use this spot
         </Button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
