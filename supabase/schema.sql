@@ -4,7 +4,7 @@
 create extension if not exists pgcrypto;
 
 create table if not exists public.reports (
-  id              uuid        primary key default gen_random_uuid(),
+  id              text        primary key default gen_random_uuid()::text,  -- text so mock ids like r_001 seed as-is
   user_alias      text        not null,
   datetime        timestamptz not null,                -- when the incident happened
   location        jsonb       not null,                -- { lat, lng, label }
@@ -29,6 +29,10 @@ create table if not exists public.reports (
       and jsonb_typeof(location -> 'label') = 'string'
     )
 );
+
+-- If the table already existed with a uuid id, convert it (no-op otherwise).
+alter table public.reports alter column id type text using id::text;
+alter table public.reports alter column id set default gen_random_uuid()::text;
 
 create index if not exists reports_user_alias_idx      on public.reports (user_alias);
 create index if not exists reports_offender_handle_idx on public.reports (offender_handle);
