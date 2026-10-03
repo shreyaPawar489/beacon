@@ -30,7 +30,7 @@ Users are anonymous. Each device generates a random private ID on first visit (l
 ## Intake and matching
 
 - **Intake uses Claude** (`app/api/intake/route.ts`, `@anthropic-ai/sdk`, model `claude-opus-5-5`). A calm, trauma-informed assistant asks at most 2 follow-ups (when, where, who) and returns `IntakeResponse` with a structured `draft`. Places are mapped to lat/lng on the server. If `ANTHROPIC_API_KEY` is missing or the call fails, the route falls back to scripted replies so the demo never dead-ends.
-- **Matching is rule-based** (`lib/match.ts`), no AI. Two reports match on the same `offender_handle`, or on the same category + within ~500 m + within ~30 days + 2 or more shared words in `offender_desc`. Confidence is the share of rules that matched.
+- **Matching is rule-based** (`lib/match.ts`), no AI. Two reports match on the same `offender_handle`, or on the same category + within ~500 m + within ~30 days + 2 or more shared words in `offender_desc` (unless both name different handles). A handle match always wins over a rule match. Confidence is the share of rules that matched.
 - Stored reports never leave our own database, but what a survivor types during intake is sent to the Anthropic API.
 
 ## Database

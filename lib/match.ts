@@ -3,7 +3,8 @@
 // Two reports match when either:
 //   - they name the same offender_handle, or
 //   - all four of: same category, within MAX_DISTANCE_M, within MAX_DAYS,
-//     and MIN_SHARED_WORDS or more shared words in offender_desc.
+//     and MIN_SHARED_WORDS or more shared words in offender_desc, unless both
+//     name an account and the accounts differ.
 // Confidence is the share of rules that matched for the best candidate.
 import type { MatchResponse, Report } from "./types";
 
@@ -54,12 +55,13 @@ export function daysApart(a: string, b: string): number {
 export interface PairScore {
   matched: boolean;
   confidence: number; // 0..1
+  byHandle: boolean; // same account handle: the strongest evidence
 }
 
 export function scorePair(a: Report, b: Report): PairScore {
   const ha = normalizeHandle(a.offender_handle);
   if (ha && ha === normalizeHandle(b.offender_handle)) {
-    return { matched: true, confidence: 1 };
+    return { matched: true, confidence: 1, byHandle: true };
   }
 
   const rules = [
@@ -69,7 +71,14 @@ export function scorePair(a: Report, b: Report): PairScore {
     sharedWords(a.offender_desc, b.offender_desc).length >= MIN_SHARED_WORDS,
   ];
   const passed = rules.filter(Boolean).length;
-  return { matched: passed === rules.length, confidence: passed / rules.length };
+  // Two different named accounts are most likely two different people.
+  const hb = normalizeHandle(b.offender_handle);
+  const conflictingHandles = !!ha && !!hb && ha !== hb;
+  return {
+    matched: passed === rules.length && !conflictingHandles,
+    confidence: passed / rules.length,
+    byHandle: false,
+  };
 }
 
 export function newGroupId(): string {
@@ -77,6 +86,7 @@ export function newGroupId(): string {
 }
 
 // Compare a report against every other report and return the best match.
+// A shared handle always beats a description/place/time match.
 // Joins the candidate's existing group if it has one, otherwise starts a new one.
 export function findMatch(report: Report, candidates: Report[]): MatchResponse {
   let best: { other: Report; score: PairScore } | null = null;
@@ -84,10 +94,12 @@ export function findMatch(report: Report, candidates: Report[]): MatchResponse {
   for (const other of candidates) {
     if (other.id === report.id) continue;
     const score = scorePair(report, other);
+    // Rank: handle match > rule match > closest non-match.
+    const rank = (s: PairScore) => (s.byHandle ? 2 : s.matched ? 1 : 0);
     if (
       !best ||
-      (score.matched && !best.score.matched) ||
-      (score.matched === best.score.matched && score.confidence > best.score.confidence)
+      rank(score) > rank(best.score) ||
+      (rank(score) === rank(best.score) && score.confidence > best.score.confidence)
     ) {
       best = { other, score };
     }

@@ -288,6 +288,15 @@ function SendButton({ disabled, onClick }: { disabled: boolean; onClick: () => v
   );
 }
 
+// Enter sends; Shift+Enter keeps a newline. Skipped mid-IME composition so accented/CJK input isn't cut off.
+function sendOnEnter(ready: boolean, send: () => void) {
+  return (e: React.KeyboardEvent) => {
+    if (e.key !== "Enter" || e.shiftKey || e.nativeEvent.isComposing) return;
+    e.preventDefault();
+    if (ready) send();
+  };
+}
+
 function Composer({
   step,
   draft,
@@ -319,7 +328,8 @@ function Composer({
         </div>
       );
 
-    case "summary":
+    case "summary": {
+      const send = () => onAnswer(text.trim(), { summary: text.trim() });
       return (
         <div className="flex items-end gap-2">
           <Textarea
@@ -327,18 +337,25 @@ function Composer({
             rows={2}
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onKeyDown={sendOnEnter(!!text.trim(), send)}
+            enterKeyHint="send"
             placeholder="What happened…"
             className="max-h-32 min-h-10 resize-none rounded-2xl bg-card"
           />
-          <SendButton disabled={!text.trim()} onClick={() => onAnswer(text.trim(), { summary: text.trim() })} />
+          <SendButton disabled={!text.trim()} onClick={send} />
         </div>
       );
+    }
 
     case "where":
       return <WhereStep online={draft.category === "online"} onAnswer={onAnswer} />;
 
     case "when": {
       const ago = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
+      const sendCustom = () => {
+        const iso = new Date(custom).toISOString();
+        onAnswer(formatWhen(iso), { datetime: iso });
+      };
       return (
         <div className="space-y-2">
           <div className="flex flex-wrap gap-2">
@@ -353,16 +370,11 @@ function Composer({
               value={custom}
               max={new Date().toISOString().slice(0, 16)}
               onChange={(e) => setCustom(e.target.value)}
+              onKeyDown={sendOnEnter(!!custom, sendCustom)}
               className="h-10 rounded-full bg-card"
               aria-label="Pick a date and time"
             />
-            <SendButton
-              disabled={!custom}
-              onClick={() => {
-                const iso = new Date(custom).toISOString();
-                onAnswer(formatWhen(iso), { datetime: iso });
-              }}
-            />
+            <SendButton disabled={!custom} onClick={sendCustom} />
           </div>
         </div>
       );
@@ -385,6 +397,8 @@ function Composer({
               autoFocus
               value={handle}
               onChange={(e) => setHandle(e.target.value)}
+              onKeyDown={sendOnEnter(!!ready, send)}
+              enterKeyHint="send"
               placeholder="@handle"
               autoCapitalize="none"
               autoCorrect="off"
@@ -397,6 +411,8 @@ function Composer({
               rows={2}
               value={text}
               onChange={(e) => setText(e.target.value)}
+              onKeyDown={sendOnEnter(!!ready, send)}
+              enterKeyHint="send"
               placeholder={online ? "Anything else about the account…" : "e.g. man, ~30s, grey hoodie"}
               className="max-h-32 min-h-10 resize-none rounded-2xl bg-card"
             />
@@ -632,7 +648,7 @@ function OutcomeScreen({
               href={`/case/${outcome.groupId}`}
               className="flex h-12 w-full items-center justify-center rounded-xl bg-white text-base font-semibold text-[hsl(262_45%_35%)] shadow-lg transition active:scale-[0.98]"
             >
-              View the case
+              See your next step
             </Link>
             <button onClick={onClose} className="h-10 w-full text-sm text-white/70">
               Not now

@@ -10,7 +10,7 @@
     "lint": "next lint",
     "db:check": "tsx --env-file=.env.local scripts/check-db.ts",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
-    "demo:reset": "rm -f data/reports.json"
+    "demo:reset": "rm -f data/reports.json data/consent.json"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

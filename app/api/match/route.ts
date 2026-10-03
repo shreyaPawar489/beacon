@@ -15,7 +15,12 @@ export async function POST(req: Request) {
   const res: MatchResponse = findMatch(report, candidates);
 
   if (res.matched && res.match_group_id) {
-    const linked = candidates.filter((c) => scorePair(report, c).matched && !c.match_group_id);
+    // Link the reports that matched as strongly as the winner (by handle if any did).
+    const scores = candidates.map((c) => ({ c, s: scorePair(report, c) }));
+    const byHandle = scores.some(({ s }) => s.byHandle);
+    const linked = scores
+      .filter(({ c, s }) => (byHandle ? s.byHandle : s.matched) && !c.match_group_id)
+      .map(({ c }) => c);
     setGroup([report.id, ...linked.map((c) => c.id)], res.match_group_id);
   }
   return NextResponse.json(res);

@@ -60,3 +60,28 @@ export function addReport(d: Required<Pick<Report, "user_alias" | "category" | "
 export function setGroup(ids: string[], groupId: string) {
   save(load().map((r) => (ids.includes(r.id) ? { ...r, match_group_id: groupId } : r)));
 }
+
+// Title IX consent: which reporters in a case are ready to go to OPHD together.
+// Kept apart from reports so the Report shape stays unchanged.
+const CONSENT_FILE = path.join(process.cwd(), "data", "consent.json");
+type ConsentMap = Record<string, string[]>; // groupId -> user aliases who consented
+
+function loadConsent(): ConsentMap {
+  return existsSync(CONSENT_FILE) ? (JSON.parse(readFileSync(CONSENT_FILE, "utf8")) as ConsentMap) : {};
+}
+
+export function consentStatus(groupId: string, user: string | null) {
+  const people = new Set(reportsInGroup(groupId).map((r) => r.user_alias));
+  const ready = (loadConsent()[groupId] ?? []).filter((u) => people.has(u));
+  return { ready: ready.length, total: people.size, mine: !!user && ready.includes(user) };
+}
+
+export function setConsent(groupId: string, user: string, consent: boolean) {
+  const all = loadConsent();
+  const current = new Set(all[groupId] ?? []);
+  if (consent) current.add(user);
+  else current.delete(user);
+  all[groupId] = Array.from(current);
+  mkdirSync(path.dirname(CONSENT_FILE), { recursive: true });
+  writeFileSync(CONSENT_FILE, JSON.stringify(all, null, 2));
+}
