@@ -1,4 +1,4 @@
-# Corroborate
+# Beacon
 
 Mobile-first PWA for anonymous women's safety reporting at UC Berkeley. Survivors file reports through a short guided chat; reports that look like the same offender get matched so people can corroborate each other.
 
@@ -13,7 +13,7 @@ Mobile-first PWA for anonymous women's safety reporting at UC Berkeley. Survivor
 
 Layout targets iPhone width (390px) first; the shell is capped at `max-w-phone` (430px). Palette is calm purple/neutral, defined as CSS variables in `app/globals.css`.
 
-Users are anonymous. Each device generates a random private ID on first visit (localStorage `corroborate:device`) and is shown a pseudonym derived from it ("Quiet Fern"). Read it with `useUser()` from `components/user-provider.tsx`; `user` is null until loaded. The header lets someone "Start fresh" on a shared device. `?user=<id>` overrides the identity for one tab (sessionStorage).
+Users are anonymous. Each device generates a random private ID on first visit (localStorage `beacon:device`) and is shown a pseudonym derived from it ("Quiet Fern"). Read it with `useUser()` from `components/user-provider.tsx`; `user` is null until loaded. The header lets someone "Start fresh" on a shared device. `?user=<id>` overrides the identity for one tab (sessionStorage).
 
 ## Shared contract
 

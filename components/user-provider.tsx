@@ -9,8 +9,9 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 // `?user=<id>` overrides it for the current tab only (sessionStorage), which is
 // handy for running two identities side by side on one laptop.
 
-const DEVICE_KEY = "corroborate:device";
-const TAB_KEY = "corroborate:tab-user";
+const DEVICE_KEY = "beacon:device";
+const TAB_KEY = "beacon:tab-user";
+const LEGACY_DEVICE_KEY = "corroborate:device"; // pre-rename; keeps existing vaults
 
 const ADJECTIVES = ["Quiet", "Brave", "Gentle", "Steady", "Bright", "Calm", "Kind", "Bold", "Clear", "Warm", "Swift", "Golden"];
 const NOUNS = ["Fern", "River", "Willow", "Harbor", "Sparrow", "Cedar", "Meadow", "Lantern", "Comet", "Juniper", "Tide", "Aster"];
@@ -45,11 +46,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     try {
       const fromUrl = new URLSearchParams(window.location.search).get("user");
       if (fromUrl) sessionStorage.setItem(TAB_KEY, fromUrl);
-      id = sessionStorage.getItem(TAB_KEY) ?? localStorage.getItem(DEVICE_KEY);
-      if (!id) {
-        id = newId();
-        localStorage.setItem(DEVICE_KEY, id);
-      }
+      id = sessionStorage.getItem(TAB_KEY) ?? localStorage.getItem(DEVICE_KEY) ?? localStorage.getItem(LEGACY_DEVICE_KEY);
+      if (!id) id = newId();
+      if (!sessionStorage.getItem(TAB_KEY)) localStorage.setItem(DEVICE_KEY, id);
     } catch {
       id = newId(); // storage blocked (private mode): identity lasts for this page only
     }

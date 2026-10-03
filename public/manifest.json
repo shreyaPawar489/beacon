@@ -1,6 +1,6 @@
 {
-  "name": "Corroborate",
-  "short_name": "Corroborate",
+  "name": "Beacon",
+  "short_name": "Beacon",
   "description": "Anonymous safety reporting for the UC Berkeley community.",
   "start_url": "/report",
   "scope": "/",

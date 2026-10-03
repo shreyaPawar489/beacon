@@ -8,12 +8,12 @@ import { UserProvider } from "@/components/user-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Corroborate",
+  title: "Beacon",
   description: "Anonymous safety reporting for the UC Berkeley community.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    title: "Corroborate",
+    title: "Beacon",
     statusBarStyle: "default",
   },
   icons: {

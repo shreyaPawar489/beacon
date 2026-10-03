@@ -14,7 +14,7 @@ export const TILE_ATTRIBUTION =
 export const pinIcon = (className = "") =>
   L.divIcon({
     className: "",
-    html: `<div class="corroborate-pin ${className}"></div>`,
+    html: `<div class="beacon-pin ${className}"></div>`,
     iconSize: [28, 28],
     iconAnchor: [14, 28],
   });

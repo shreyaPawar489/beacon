@@ -1,4 +1,4 @@
--- Corroborate schema. Paste into the Supabase SQL Editor and run.
+-- Beacon schema. Paste into the Supabase SQL Editor and run.
 -- Mirrors the Report type in lib/types.ts.
 
 create extension if not exists pgcrypto;

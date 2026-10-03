@@ -27,7 +27,7 @@ export function AppHeader() {
       <div className="flex h-14 items-center justify-between px-4">
         <div className="flex items-center gap-2 font-semibold text-primary">
           <ShieldCheck className="h-5 w-5" />
-          Corroborate
+          Beacon
         </div>
 
         <div ref={ref} className="relative">

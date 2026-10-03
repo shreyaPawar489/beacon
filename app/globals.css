@@ -47,7 +47,7 @@
 }
 
 /* Map pins (Leaflet divIcons) */
-.corroborate-pin {
+.beacon-pin {
   width: 28px;
   height: 28px;
   border-radius: 50% 50% 50% 0;
@@ -56,10 +56,10 @@
   border: 3px solid #fff;
   box-shadow: 0 4px 12px rgb(60 30 120 / 0.35);
 }
-.corroborate-pin.demo {
+.beacon-pin.demo {
   background: hsl(330 60% 55%);
 }
-.corroborate-me {
+.beacon-me {
   width: 18px;
   height: 18px;
   border-radius: 9999px;
