@@ -17,7 +17,7 @@ Demo users are Maya and Priya. The header switcher stores the current one in loc
 
 ## Shared contract
 
-`lib/types.ts` defines every shared type and API shape. `lib/mock.ts` has 30 mock reports, including two matched pairs (`mg_doe_hoodie`, `mg_calbro`). `/api/reports` reads and writes Supabase; `/api/match` and `/api/case` still use mock data.
+`lib/types.ts` defines every shared type and API shape. `lib/mock.ts` has 30 mock reports, including two matched pairs (`mg_doe_hoodie`, `mg_calbro`). All API routes read and write `lib/store.ts`, a JSON file at `data/reports.json` (gitignored, seeded from `lib/mock.ts` on first use; `npm run demo:reset` wipes it). Supabase code is kept for later but unused. Use `?user=maya` / `?user=priya` to run two users in two windows (stored per tab in sessionStorage). The Map tab is hidden.
 
 | Route | Request | Response |
 |---|---|---|

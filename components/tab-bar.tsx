@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Lock, Map, MessageSquarePlus } from "lucide-react";
+import { Lock, MessageSquarePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/report", label: "Report", icon: MessageSquarePlus },
-  { href: "/map", label: "Map", icon: Map },
   { href: "/vault", label: "Vault", icon: Lock },
 ];
 

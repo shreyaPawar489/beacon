@@ -45,3 +45,32 @@
 .pt-safe {
   padding-top: env(safe-area-inset-top);
 }
+
+/* Map pins (Leaflet divIcons) */
+.corroborate-pin {
+  width: 28px;
+  height: 28px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: hsl(var(--primary));
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgb(60 30 120 / 0.35);
+}
+.corroborate-pin.demo {
+  background: hsl(330 60% 55%);
+}
+.corroborate-me {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #3b82f6;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 6px rgb(59 130 246 / 0.2);
+}
+.leaflet-container {
+  font-family: inherit;
+  background: hsl(var(--muted));
+}
+.leaflet-control-attribution {
+  font-size: 9px;
+}
